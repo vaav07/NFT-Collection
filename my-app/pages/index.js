@@ -27,7 +27,6 @@ export default function Home() {
   };
 
   const presaleMint = async () => {
-    setLoading(true);
     try {
       const signer = await getProviderOrSigner(true);
 
@@ -36,17 +35,17 @@ export default function Home() {
       const txn = await nftContract.presaleMint({
         value: utils.parseEther("0.01"),
       });
-      await txn.wait();
-
-      window.alert("You successfully minted a CryptoDev");
+      setLoading(true);
+      // wait for the transaction to get mined
+      await tx.wait();
+      setLoading(false);
+      window.alert("You successfully minted a Crypto Dev!");
     } catch (error) {
       console.log(error);
     }
-    setLoading(false);
   };
 
   const publicMint = async () => {
-    setLoading(true);
     try {
       const signer = await getProviderOrSigner(true);
 
@@ -55,13 +54,14 @@ export default function Home() {
       const txn = await nftContract.mint({
         value: utils.parseEther("0.01"),
       });
-      await txn.wait();
-
-      window.alert("You successfully minted a CryptoDev");
+      setLoading(true);
+      // wait for the transaction to get mined
+      await tx.wait();
+      setLoading(false);
+      window.alert("You successfully minted a Crypto Dev!");
     } catch (error) {
       console.log(error);
     }
-    setLoading(false);
   };
 
   const getOwner = async () => {
@@ -71,6 +71,7 @@ export default function Home() {
       const nftContract = new Contract(NFT_CONTRACT_ADDRESS, abi, signer);
 
       const owner = await nftContract.owner();
+
       const userAddress = await signer.getAddress();
 
       if (owner.toLowerCase() === userAddress.toLowerCase()) {
@@ -82,20 +83,19 @@ export default function Home() {
   };
 
   const startPresale = async () => {
-    setLoading(true);
     try {
       const signer = await getProviderOrSigner(true);
 
       const nftContract = new Contract(NFT_CONTRACT_ADDRESS, abi, signer);
 
       const txn = await nftContract.startPresale();
+      setLoading(true);
       await txn.wait();
-
-      setPresaleStarted(true);
+      setLoading(false);
+      await checkIfPresaleStarted();
     } catch (error) {
       console.error(error);
     }
-    setLoading(false);
   };
 
   const checkIfPresaleEnded = async () => {
@@ -112,8 +112,12 @@ export default function Home() {
       const hasPresaleEnded = presaleEndTime.lt(
         Math.floor(currentTimeInSeconds)
       );
-
-      setPresaleEnded(hasPresaleEnded);
+      if (presaleEnded) {
+        setPresaleEnded(true);
+      } else {
+        setPresaleEnded(false);
+      }
+      return hasPresaleEnded;
     } catch (error) {
       console.error(error);
     }
@@ -127,6 +131,9 @@ export default function Home() {
       const nftContract = new Contract(NFT_CONTRACT_ADDRESS, abi, provider);
 
       const isPresaleStarted = await nftContract.presaleStarted();
+      if (!isPresaleStarted) {
+        await getOwner();
+      }
       setPresaleStarted(isPresaleStarted);
 
       return isPresaleStarted;
